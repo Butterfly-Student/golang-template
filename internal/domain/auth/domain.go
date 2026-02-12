@@ -84,7 +84,7 @@ func (d *domain) Register(req model.RegisterRequest) error {
 		Status:   "active",
 	}
 
-	if err := d.dbPort.User().Create(&user); err != nil {
+	if err = d.dbPort.User().Create(&user); err != nil {
 		return err
 	}
 

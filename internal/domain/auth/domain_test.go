@@ -5,14 +5,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/casbin/casbin/v2"
-	casbinmodel "github.com/casbin/casbin/v2/model"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"go-template/internal/model"
 	"go-template/internal/utils/hash"
 	"go-template/internal/utils/token"
 	mock_outbound_port "go-template/tests/mocks/port"
+
+	"github.com/casbin/casbin/v2"
+	casbinmodel "github.com/casbin/casbin/v2/model"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthDomain(t *testing.T) {

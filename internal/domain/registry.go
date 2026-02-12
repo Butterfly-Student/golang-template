@@ -1,11 +1,12 @@
 package domain
 
 import (
-	"github.com/casbin/casbin/v2"
 	"go-template/internal/domain/auth"
 	"go-template/internal/domain/client"
 	"go-template/internal/domain/user"
 	outbound_port "go-template/internal/port/outbound"
+
+	"github.com/casbin/casbin/v2"
 )
 
 type Domain interface {

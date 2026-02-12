@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
+	"github.com/casbin/casbin/v2"
 	command_inbound_adapter "go-template/internal/adapter/inbound/command"
 	gin_inbound_adapter "go-template/internal/adapter/inbound/gin"
 	rabbitmq_inbound_adapter "go-template/internal/adapter/inbound/rabbitmq"
@@ -18,7 +19,6 @@ import (
 	rabbitmq_outbound_adapter "go-template/internal/adapter/outbound/rabbitmq"
 	redis_outbound_adapter "go-template/internal/adapter/outbound/redis"
 	temporal_outbound_adapter "go-template/internal/adapter/outbound/temporal"
-	"github.com/casbin/casbin/v2"
 	"go-template/internal/domain"
 	_ "go-template/internal/migration/postgres"
 	outbound_port "go-template/internal/port/outbound"
