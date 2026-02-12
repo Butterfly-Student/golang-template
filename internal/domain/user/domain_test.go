@@ -3,10 +3,11 @@ package user
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"go-template/internal/model"
 	mock_outbound_port "go-template/tests/mocks/port"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetProfile(t *testing.T) {

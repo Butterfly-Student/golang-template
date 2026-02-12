@@ -10,7 +10,6 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
-	"github.com/casbin/casbin/v2"
 	command_inbound_adapter "go-template/internal/adapter/inbound/command"
 	gin_inbound_adapter "go-template/internal/adapter/inbound/gin"
 	rabbitmq_inbound_adapter "go-template/internal/adapter/inbound/rabbitmq"
@@ -28,6 +27,8 @@ import (
 	"go-template/utils/log"
 	"go-template/utils/rabbitmq"
 	"go-template/utils/redis"
+
+	"github.com/casbin/casbin/v2"
 )
 
 var databaseDriverList = []string{"postgres"}
