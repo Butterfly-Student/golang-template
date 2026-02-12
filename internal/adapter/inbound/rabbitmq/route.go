@@ -4,10 +4,10 @@ import (
 	"context"
 	"os"
 
-	"prabogo/internal/model"
-	inbound_port "prabogo/internal/port/inbound"
-	"prabogo/utils/log"
-	"prabogo/utils/rabbitmq"
+	"go-template/internal/model"
+	inbound_port "go-template/internal/port/inbound"
+	"go-template/utils/log"
+	"go-template/utils/rabbitmq"
 )
 
 func InitRoute(
@@ -31,7 +31,7 @@ func InitRoute(
 					},
 				)
 				if err != nil {
-					log.WithContext(ctx).Errorf("failed to subscribe to %s: %s", model.UpsertClientMessage, err)
+					log.WithContext(ctx).Error("failed to subscribe to message", err)
 				}
 				close(done)
 			}()

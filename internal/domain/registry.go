@@ -1,8 +1,8 @@
 package domain
 
 import (
-	"prabogo/internal/domain/client"
-	outbound_port "prabogo/internal/port/outbound"
+	"go-template/internal/domain/client"
+	outbound_port "go-template/internal/port/outbound"
 )
 
 type Domain interface {

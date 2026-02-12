@@ -1,9 +1,9 @@
 package temporal_inbound_adapter
 
 import (
-	client_temporal_inbound_adapter "prabogo/internal/adapter/inbound/temporal/client"
-	"prabogo/internal/domain"
-	inbound_port "prabogo/internal/port/inbound"
+	client_temporal_inbound_adapter "go-template/internal/adapter/inbound/temporal/client"
+	"go-template/internal/domain"
+	inbound_port "go-template/internal/port/inbound"
 )
 
 type adapter struct {

@@ -3,12 +3,12 @@ package client_temporal_inbound_adapter
 import (
 	"go.temporal.io/sdk/worker"
 
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
-	inbound_port "prabogo/internal/port/inbound"
-	"prabogo/utils/activity"
-	"prabogo/utils/log"
-	"prabogo/utils/temporal"
+	"go-template/internal/domain"
+	"go-template/internal/model"
+	inbound_port "go-template/internal/port/inbound"
+	"go-template/utils/activity"
+	"go-template/utils/log"
+	"go-template/utils/temporal"
 )
 
 type clientAdapter struct {

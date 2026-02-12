@@ -3,8 +3,8 @@ package temporal_inbound_adapter
 import (
 	"context"
 
-	inbound_port "prabogo/internal/port/inbound"
-	"prabogo/utils/log"
+	inbound_port "go-template/internal/port/inbound"
+	"go-template/utils/log"
 )
 
 func InitRoute(

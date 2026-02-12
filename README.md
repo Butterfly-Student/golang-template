@@ -1,8 +1,8 @@
-# Prabogo
+# GoTemplate
 
-![Alt text](./design-docs/images/icon.png "Prabogo Icon")
+![Alt text](./design-docs/images/icon.png "GoTemplate Icon")
 
-**Prabogo** is a Go framework designed to simplify project development by providing an interactive command interface and built-in instructions for AI assistance. This framework streamlines common engineering tasks, making it easier for software engineers to scaffold, generate, and manage project components efficiently. With Prabogo, developers benefit from automation and intelligent guidance, accelerating the software development process.
+**GoTemplate** is a Go framework designed to simplify project development by providing an interactive command interface and built-in instructions for AI assistance. This framework streamlines common engineering tasks, making it easier for software engineers to scaffold, generate, and manage project components efficiently. With GoTemplate, developers benefit from automation and intelligent guidance, accelerating the software development process.
 
 ## Design Docs
 
@@ -10,9 +10,9 @@
 
 ## AI Agents
 
-![Clarifier](./design-docs/images/clarifier.png "Prabogo Clarifier")
-![Task Designer](./design-docs/images/task-designer.png "Prabogo Task Designer")
-![Executor](./design-docs/images/executor.png "Prabogo Executor")
+![Clarifier](./design-docs/images/clarifier.png "GoTemplate Clarifier")
+![Task Designer](./design-docs/images/task-designer.png "GoTemplate Task Designer")
+![Executor](./design-docs/images/executor.png "GoTemplate Executor")
 
 [AI Agents for Development](./design-docs/ai-agents.md)
 

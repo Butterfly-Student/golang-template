@@ -5,8 +5,8 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
+	"go-template/internal/domain"
+	"go-template/internal/model"
 )
 
 type ClientWorkflow interface {

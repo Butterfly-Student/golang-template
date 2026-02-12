@@ -6,29 +6,27 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	joonix "github.com/joonix/log"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 
-	command_inbound_adapter "prabogo/internal/adapter/inbound/command"
-	fiber_inbound_adapter "prabogo/internal/adapter/inbound/fiber"
-	rabbitmq_inbound_adapter "prabogo/internal/adapter/inbound/rabbitmq"
-	temporal_inbound_adapter "prabogo/internal/adapter/inbound/temporal"
-	postgres_outbound_adapter "prabogo/internal/adapter/outbound/postgres"
-	rabbitmq_outbound_adapter "prabogo/internal/adapter/outbound/rabbitmq"
-	redis_outbound_adapter "prabogo/internal/adapter/outbound/redis"
-	temporal_outbound_adapter "prabogo/internal/adapter/outbound/temporal"
-	"prabogo/internal/domain"
-	_ "prabogo/internal/migration/postgres"
-	outbound_port "prabogo/internal/port/outbound"
-	"prabogo/utils"
-	"prabogo/utils/activity"
-	"prabogo/utils/database"
-	"prabogo/utils/log"
-	"prabogo/utils/rabbitmq"
-	"prabogo/utils/redis"
+	command_inbound_adapter "go-template/internal/adapter/inbound/command"
+	gin_inbound_adapter "go-template/internal/adapter/inbound/gin"
+	rabbitmq_inbound_adapter "go-template/internal/adapter/inbound/rabbitmq"
+	temporal_inbound_adapter "go-template/internal/adapter/inbound/temporal"
+	postgres_outbound_adapter "go-template/internal/adapter/outbound/postgres"
+	rabbitmq_outbound_adapter "go-template/internal/adapter/outbound/rabbitmq"
+	redis_outbound_adapter "go-template/internal/adapter/outbound/redis"
+	temporal_outbound_adapter "go-template/internal/adapter/outbound/temporal"
+	"go-template/internal/domain"
+	_ "go-template/internal/migration/postgres"
+	outbound_port "go-template/internal/port/outbound"
+	"go-template/utils"
+	"go-template/utils/activity"
+	"go-template/utils/database"
+	"go-template/utils/log"
+	"go-template/utils/rabbitmq"
+	"go-template/utils/redis"
 )
 
 var databaseDriverList = []string{"postgres"}
@@ -88,7 +86,7 @@ func (a *App) Run(option string) {
 
 func databaseOutbound(ctx context.Context) outbound_port.DatabasePort {
 	if !utils.IsInList(databaseDriverList, outboundDatabaseDriver) {
-		log.WithContext(ctx).Fatal("database driver is not supported")
+		log.WithContext(ctx).Error("database driver is not supported")
 		os.Exit(1)
 	}
 	db := database.InitDatabase(ctx, outboundDatabaseDriver)
@@ -102,14 +100,15 @@ func databaseOutbound(ctx context.Context) outbound_port.DatabasePort {
 
 func messageOutbound(ctx context.Context) outbound_port.MessagePort {
 	if !utils.IsInList(messageDriverList, outboundMessageDriver) {
-		log.WithContext(ctx).Fatal("message driver is not supported")
+		log.WithContext(ctx).Error("message driver is not supported")
 		os.Exit(1)
 	}
 
 	switch outboundMessageDriver {
 	case "rabbitmq":
 		if err := rabbitmq.InitMessage(); err != nil {
-			log.WithContext(ctx).Fatalf("failed to init rabbitmq: %v", err)
+			log.WithContext(ctx).Error("failed to init rabbitmq", err)
+			os.Exit(1)
 		}
 		return rabbitmq_outbound_adapter.NewAdapter()
 	}
@@ -118,7 +117,7 @@ func messageOutbound(ctx context.Context) outbound_port.MessagePort {
 
 func cacheOutbound(ctx context.Context) outbound_port.CachePort {
 	if !utils.IsInList([]string{"redis"}, outboundCacheDriver) {
-		log.WithContext(ctx).Fatal("cache driver is not supported")
+		log.WithContext(ctx).Error("cache driver is not supported")
 		os.Exit(1)
 	}
 
@@ -132,7 +131,7 @@ func cacheOutbound(ctx context.Context) outbound_port.CachePort {
 
 func workflowOutbound(ctx context.Context) outbound_port.WorkflowPort {
 	if !utils.IsInList([]string{"temporal"}, outboundWorkflowDriver) {
-		log.WithContext(ctx).Fatal("workflow driver is not supported")
+		log.WithContext(ctx).Error("workflow driver is not supported")
 		os.Exit(1)
 	}
 
@@ -146,18 +145,19 @@ func workflowOutbound(ctx context.Context) outbound_port.WorkflowPort {
 func (a *App) httpInbound() {
 	ctx := a.ctx
 	if !utils.IsInList(httpDriverList, inboundHttpDriver) {
-		log.WithContext(ctx).Fatal("http driver is not supported")
+		log.WithContext(ctx).Error("http driver is not supported")
 		os.Exit(1)
 	}
 
 	switch inboundHttpDriver {
-	case "fiber":
-		app := fiber.New()
-		inboundHttpAdapter := fiber_inbound_adapter.NewAdapter(a.domain)
-		fiber_inbound_adapter.InitRoute(ctx, app, inboundHttpAdapter)
+	case "gin":
+		app := gin.Default()
+		inboundHttpAdapter := gin_inbound_adapter.NewAdapter(a.domain)
+		gin_inbound_adapter.InitRoute(ctx, app, inboundHttpAdapter)
 		go func() {
-			if err := app.Listen(":" + os.Getenv("SERVER_PORT")); err != nil {
-				log.WithContext(ctx).Fatalf("failed to listen and serve: %+v", err)
+			if err := app.Run(":" + os.Getenv("SERVER_PORT")); err != nil {
+				log.WithContext(ctx).Error("failed to listen and serve", err)
+				os.Exit(1)
 			}
 		}()
 	}
@@ -174,7 +174,7 @@ func (a *App) httpInbound() {
 func (a *App) messageInbound() {
 	ctx := a.ctx
 	if !utils.IsInList(messageDriverList, inboundMessageDriver) {
-		log.WithContext(ctx).Fatal("message driver is not supported")
+		log.WithContext(ctx).Error("message driver is not supported")
 		os.Exit(1)
 	}
 
@@ -194,7 +194,7 @@ func (a *App) commandInbound() {
 func (a *App) workflowInbound() {
 	ctx := a.ctx
 	if !utils.IsInList(workflowDriverList, inboundWorkflowDriver) {
-		log.WithContext(ctx).Fatal("workflow driver is not supported")
+		log.WithContext(ctx).Error("workflow driver is not supported")
 		os.Exit(1)
 	}
 
@@ -206,12 +206,7 @@ func (a *App) workflowInbound() {
 }
 
 func configureLogging() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.AddHook(utils.LogrusSourceContextHook{})
-
-	if os.Getenv("APP_MODE") != "release" {
-		logrus.SetFormatter(&logrus.TextFormatter{ForceColors: true})
-	} else {
-		logrus.SetFormatter(&joonix.FluentdFormatter{})
-	}
+	// Zap logger is initialized in log package init()
+	// No additional configuration needed here; it auto-detects APP_MODE
+	defer log.Sync()
 }

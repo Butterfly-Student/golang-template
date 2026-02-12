@@ -21,7 +21,7 @@ linters:
 
 linters-settings:
   goimports:
-    local-prefixes: prabogo
+    local-prefixes: go-template
   govet:
     enable-all: true
     disable:

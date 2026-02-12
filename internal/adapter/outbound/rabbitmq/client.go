@@ -3,9 +3,9 @@ package rabbitmq_outbound_adapter
 import (
 	"context"
 
-	"prabogo/internal/model"
-	outbound_port "prabogo/internal/port/outbound"
-	"prabogo/utils/rabbitmq"
+	"go-template/internal/model"
+	outbound_port "go-template/internal/port/outbound"
+	"go-template/utils/rabbitmq"
 )
 
 type clientAdapter struct{}

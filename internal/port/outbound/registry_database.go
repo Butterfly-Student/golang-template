@@ -1,6 +1,6 @@
 package outbound_port
 
-import "database/sql"
+import "gorm.io/gorm"
 
 //go:generate mockgen -source=registry_database.go -destination=./../../../tests/mocks/port/mock_registry_database.go
 type InTransaction func(repoRegistry DatabasePort) (interface{}, error)
@@ -10,9 +10,8 @@ type DatabasePort interface {
 	DoInTransaction(txFunc InTransaction) (out interface{}, err error)
 }
 
+// DatabaseExecutor is now GORM's *gorm.DB
+// We keep this interface for compatibility, but it now wraps gorm.DB
 type DatabaseExecutor interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(string) (*sql.Stmt, error)
-	Query(string, ...interface{}) (*sql.Rows, error)
-	QueryRow(string, ...interface{}) *sql.Row
+	*gorm.DB
 }

@@ -1,5 +1,7 @@
 package inbound_port
 
+import "github.com/gin-gonic/gin"
+
 type PingHttpPort interface {
-	GetResource(a any) error
+	GetResource(c *gin.Context)
 }

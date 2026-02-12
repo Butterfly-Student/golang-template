@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"prabogo/internal"
+	"go-template/internal"
 )
 
 func main() {

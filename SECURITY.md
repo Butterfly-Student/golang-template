@@ -1,6 +1,6 @@
-# Security Guidelines for Prabogo
+# Security Guidelines for GoTemplate
 
-This document outlines security best practices for deploying Prabogo in production environments.
+This document outlines security best practices for deploying GoTemplate in production environments.
 
 ## Production Deployment Checklist
 

@@ -3,7 +3,7 @@ package fixtures
 import (
 	"time"
 
-	"prabogo/internal/model"
+	"go-template/internal/model"
 )
 
 type ClientTestData struct{}

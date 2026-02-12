@@ -1,21 +1,19 @@
-package fiber_inbound_adapter_test
+package gin_inbound_adapter_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/redis/go-redis/v9"
 	. "github.com/smartystreets/goconvey/convey"
 
-	fiber_inbound_adapter "prabogo/internal/adapter/inbound/fiber"
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
-	mock_outbound_port "prabogo/tests/mocks/port"
+	gin_inbound_adapter "go-template/internal/adapter/inbound/gin"
+	"go-template/internal/domain"
+	mock_outbound_port "go-template/tests/mocks/port"
 )
 
 func TestMiddlewareAdapter(t *testing.T) {
@@ -39,32 +37,31 @@ func TestMiddlewareAdapter(t *testing.T) {
 		mockWorkflowPort.EXPECT().Client().Return(mockClientWorkflowPort).AnyTimes()
 
 		dom := domain.NewDomain(mockDatabasePort, mockMessagePort, mockCachePort, mockWorkflowPort)
-		adapter := fiber_inbound_adapter.NewAdapter(dom)
+		adapter := gin_inbound_adapter.NewAdapter(dom)
+
+		// Set Gin to test mode
+		gin.SetMode(gin.TestMode)
 
 		Convey("InternalAuth", func() {
-			app := fiber.New()
-			app.Use(func(c *fiber.Ctx) error {
-				return adapter.Middleware().InternalAuth(c)
-			})
-			app.Get("/test", func(c *fiber.Ctx) error {
-				return c.SendString("OK")
+			router := gin.New()
+			router.Use(adapter.Middleware().InternalAuth())
+			router.GET("/test", func(c *gin.Context) {
+				c.String(http.StatusOK, "OK")
 			})
 
 			Convey("Missing Authorization header", func() {
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
 			Convey("Empty bearer token", func() {
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Bearer ")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
 			Convey("Invalid bearer token", func() {
@@ -73,10 +70,9 @@ func TestMiddlewareAdapter(t *testing.T) {
 
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Bearer invalid-key")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
 			Convey("Valid bearer token", func() {
@@ -85,84 +81,75 @@ func TestMiddlewareAdapter(t *testing.T) {
 
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Bearer valid-key")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusOK)
 			})
 
 			Convey("Malformed authorization header", func() {
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Basic abc123")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 		})
 
 		Convey("ClientAuth", func() {
-			app := fiber.New()
-			app.Use(func(c *fiber.Ctx) error {
-				return adapter.Middleware().ClientAuth(c)
+			router := gin.New()
+			router.Use(adapter.Middleware().ClientAuth())
+			router.GET("/test", func(c *gin.Context) {
+				c.String(http.StatusOK, "OK")
 			})
-			app.Get("/test", func(c *fiber.Ctx) error {
-				return c.SendString("OK")
-			})
-
-			clientOutput := model.Client{
-				ID: 1,
-				ClientInput: model.ClientInput{
-					Name:      "Test Client",
-					BearerKey: "valid-client-key",
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-			}
 
 			Convey("Missing Authorization header", func() {
-				req := httptest.NewRequest(http.MethodGet, "/test", nil)
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
-			})
-
-			Convey("Client exists in cache", func() {
-				mockClientCachePort.EXPECT().Get(gomock.Any()).Return(clientOutput, nil).Times(1)
+				// Need to set AUTH_DRIVER to non-JWT for this test
+				os.Setenv("AUTH_DRIVER", "database")
+				defer os.Unsetenv("AUTH_DRIVER")
 
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
-				req.Header.Set("Authorization", "Bearer valid-client-key")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 
-			Convey("Client exists in database (cache miss)", func() {
-				mockClientCachePort.EXPECT().Get(gomock.Any()).Return(model.Client{}, redis.Nil).Times(1)
+			Convey("Client exists in database", func() {
+				os.Setenv("AUTH_DRIVER", "database")
+				defer os.Unsetenv("AUTH_DRIVER")
+
 				mockClientDatabasePort.EXPECT().IsExists(gomock.Any()).Return(true, nil).Times(1)
-				mockClientDatabasePort.EXPECT().FindByFilter(gomock.Any(), gomock.Any()).Return([]model.Client{clientOutput}, nil).Times(1)
-				mockClientCachePort.EXPECT().Set(gomock.Any()).Return(nil).Times(1)
 
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Bearer valid-client-key")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusOK)
 			})
 
 			Convey("Client does not exist", func() {
-				mockClientCachePort.EXPECT().Get(gomock.Any()).Return(model.Client{}, redis.Nil).Times(1)
+				os.Setenv("AUTH_DRIVER", "database")
+				defer os.Unsetenv("AUTH_DRIVER")
+
 				mockClientDatabasePort.EXPECT().IsExists(gomock.Any()).Return(false, nil).Times(1)
 
 				req := httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.Header.Set("Authorization", "Bearer nonexistent-key")
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusUnauthorized)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
+			})
+
+			Convey("Database error", func() {
+				os.Setenv("AUTH_DRIVER", "database")
+				defer os.Unsetenv("AUTH_DRIVER")
+
+				mockClientDatabasePort.EXPECT().IsExists(gomock.Any()).Return(false, redis.Nil).Times(1)
+
+				req := httptest.NewRequest(http.MethodGet, "/test", nil)
+				req.Header.Set("Authorization", "Bearer test-key")
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})

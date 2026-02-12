@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	"prabogo/internal/model"
-	outbound_port "prabogo/internal/port/outbound"
-	"prabogo/utils/temporal"
+	"go-template/internal/model"
+	outbound_port "go-template/internal/port/outbound"
+	"go-template/utils/temporal"
 )
 
 type clientWorkflowAdapter struct{}

@@ -1,135 +1,114 @@
 package postgres_outbound_adapter
 
 import (
-	"prabogo/internal/model"
-	outbound_port "prabogo/internal/port/outbound"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
-	"github.com/doug-martin/goqu/v9"
-	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
+	"go-template/internal/model"
+	outbound_port "go-template/internal/port/outbound"
 )
 
 const tableClient = "clients"
 
 type clientAdapter struct {
-	db outbound_port.DatabaseExecutor
+	db *gorm.DB
 }
 
 func NewClientAdapter(
-	db outbound_port.DatabaseExecutor,
+	db *gorm.DB,
 ) outbound_port.ClientDatabasePort {
 	return &clientAdapter{
 		db: db,
 	}
 }
 
+// Upsert inserts or updates client records
 func (adapter *clientAdapter) Upsert(datas []model.ClientInput) error {
-	dataset := goqu.Dialect("postgres").
-		Insert(tableClient).
-		Rows(datas)
-
-	query, _, err := dataset.ToSQL()
-	if err != nil {
-		return err
+	// Build the data structures for GORM
+	clients := make([]map[string]interface{}, len(datas))
+	for i, data := range datas {
+		clients[i] = map[string]interface{}{
+			"name":       data.Name,
+			"bearer_key": data.BearerKey,
+			"created_at": data.CreatedAt,
+			"updated_at": data.UpdatedAt,
+		}
 	}
 
-	query += ` ON CONFLICT (bearer_key) DO UPDATE SET name = EXCLUDED.name, updated_at = EXCLUDED.updated_at`
-	_, err = adapter.db.Exec(query)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// Use GORM's Clauses for ON CONFLICT handling
+	return adapter.db.Table(tableClient).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "bearer_key"}},
+			DoUpdates: clause.AssignmentColumns([]string{"name", "updated_at"}),
+		}).
+		Create(clients).Error
 }
 
-func (adapter *clientAdapter) FindByFilter(filter model.ClientFilter, lock bool) (result []model.Client, err error) {
-	dialect := goqu.Dialect("postgres")
-	dataset := dialect.From(tableClient)
-	dataset = addFilter(dataset, filter)
+// FindByFilter retrieves clients based on filter criteria
+func (adapter *clientAdapter) FindByFilter(filter model.ClientFilter, lock bool) ([]model.Client, error) {
+	var clients []model.Client
 
-	query, _, err := dataset.ToSQL()
-	if err != nil {
-		return nil, err
+	query := adapter.db.Table(tableClient)
+
+	// Apply filters
+	if len(filter.IDs) > 0 {
+		query = query.Where("id IN ?", filter.IDs)
 	}
 
+	if len(filter.Names) > 0 {
+		query = query.Where("name IN ?", filter.Names)
+	}
+
+	if len(filter.BearerKeys) > 0 {
+		query = query.Where("bearer_key IN ?", filter.BearerKeys)
+	}
+
+	// Add row locking if requested
 	if lock {
-		query += " FOR UPDATE"
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
 	}
 
-	res, err := adapter.db.Query(query)
+	// Execute query
+	err := query.Find(&clients).Error
 	if err != nil {
 		return nil, err
-	}
-	defer res.Close()
-
-	clients := []model.Client{}
-	for res.Next() {
-		result := model.Client{}
-		err := res.Scan(
-			&result.ID,
-			&result.Name,
-			&result.BearerKey,
-			&result.CreatedAt,
-			&result.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		clients = append(clients, result)
 	}
 
 	return clients, nil
 }
 
+// DeleteByFilter deletes clients based on filter criteria
 func (adapter *clientAdapter) DeleteByFilter(filter model.ClientFilter) error {
-	dialect := goqu.Dialect("postgres")
-	dataset := dialect.From(tableClient)
-	dataset = addFilter(dataset, filter)
+	query := adapter.db.Table(tableClient)
 
-	query, _, err := dataset.Delete().ToSQL()
-	if err != nil {
-		return err
+	// Apply filters
+	if len(filter.IDs) > 0 {
+		query = query.Where("id IN ?", filter.IDs)
 	}
 
-	res, err := adapter.db.Query(query)
-	if err != nil {
-		return err
+	if len(filter.Names) > 0 {
+		query = query.Where("name IN ?", filter.Names)
 	}
-	defer res.Close()
 
-	return nil
+	if len(filter.BearerKeys) > 0 {
+		query = query.Where("bearer_key IN ?", filter.BearerKeys)
+	}
+
+	// Execute delete
+	return query.Delete(&model.Client{}).Error
 }
 
+// IsExists checks if a client exists by bearer key
 func (adapter *clientAdapter) IsExists(bearerKey string) (bool, error) {
-	dialect := goqu.Dialect("postgres")
-	dataset := dialect.From(tableClient).Select("id").Where(goqu.Ex{"bearer_key": bearerKey})
+	var count int64
 
-	query, _, err := dataset.ToSQL()
+	err := adapter.db.Table(tableClient).
+		Where("bearer_key = ?", bearerKey).
+		Count(&count).Error
+
 	if err != nil {
 		return false, err
 	}
 
-	res, err := adapter.db.Query(query)
-	if err != nil {
-		return false, err
-	}
-	defer res.Close()
-
-	return res.Next(), nil
-}
-
-func addFilter(dataset *goqu.SelectDataset, filter model.ClientFilter) *goqu.SelectDataset {
-	if filter.IDs != nil {
-		dataset = dataset.Where(goqu.Ex{"id": filter.IDs})
-	}
-
-	if filter.Names != nil {
-		dataset = dataset.Where(goqu.Ex{"name": filter.Names})
-	}
-
-	if filter.BearerKeys != nil {
-		dataset = dataset.Where(goqu.Ex{"bearer_key": filter.BearerKeys})
-	}
-
-	return dataset
+	return count > 0, nil
 }

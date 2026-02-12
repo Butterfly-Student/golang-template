@@ -1,9 +1,11 @@
 package inbound_port
 
+import "github.com/gin-gonic/gin"
+
 type ClientHttpPort interface {
-	Upsert(a any) error
-	Find(a any) error
-	Delete(a any) error
+	Upsert(c *gin.Context)
+	Find(c *gin.Context)
+	Delete(c *gin.Context)
 }
 
 type ClientMessagePort interface {

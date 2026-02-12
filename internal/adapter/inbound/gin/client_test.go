@@ -1,4 +1,4 @@
-package fiber_inbound_adapter_test
+package gin_inbound_adapter_test
 
 import (
 	"bytes"
@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 
-	fiber_inbound_adapter "prabogo/internal/adapter/inbound/fiber"
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
-	mock_outbound_port "prabogo/tests/mocks/port"
+	gin_inbound_adapter "go-template/internal/adapter/inbound/gin"
+	"go-template/internal/domain"
+	"go-template/internal/model"
+	mock_outbound_port "go-template/tests/mocks/port"
 )
 
 func TestClientAdapter(t *testing.T) {
@@ -40,18 +40,14 @@ func TestClientAdapter(t *testing.T) {
 		mockWorkflowPort.EXPECT().Client().Return(mockClientWorkflowPort).AnyTimes()
 
 		dom := domain.NewDomain(mockDatabasePort, mockMessagePort, mockCachePort, mockWorkflowPort)
-		adapter := fiber_inbound_adapter.NewAdapter(dom)
+		adapter := gin_inbound_adapter.NewAdapter(dom)
 
-		app := fiber.New()
-		app.Post("/client-upsert", func(c *fiber.Ctx) error {
-			return adapter.Client().Upsert(c)
-		})
-		app.Post("/client-find", func(c *fiber.Ctx) error {
-			return adapter.Client().Find(c)
-		})
-		app.Post("/client-delete", func(c *fiber.Ctx) error {
-			return adapter.Client().Delete(c)
-		})
+		// Set Gin to test mode
+		gin.SetMode(gin.TestMode)
+		router := gin.New()
+		router.POST("/client-upsert", adapter.Client().Upsert)
+		router.POST("/client-find", adapter.Client().Find)
+		router.POST("/client-delete", adapter.Client().Delete)
 
 		inputs := []model.ClientInput{
 			{Name: "Test Client"},
@@ -82,12 +78,12 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-upsert", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
 
-				respBody, _ := io.ReadAll(resp.Body)
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				respBody, _ := io.ReadAll(w.Body)
 				var result model.Response
 				json.Unmarshal(respBody, &result)
 				So(result.Success, ShouldBeTrue)
@@ -97,10 +93,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-upsert", bytes.NewReader([]byte("invalid json")))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
 			})
 
 			Convey("Domain error", func() {
@@ -110,10 +106,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-upsert", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 
@@ -125,12 +121,12 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-find", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
 
-				respBody, _ := io.ReadAll(resp.Body)
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				respBody, _ := io.ReadAll(w.Body)
 				var result model.Response
 				json.Unmarshal(respBody, &result)
 				So(result.Success, ShouldBeTrue)
@@ -140,10 +136,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-find", bytes.NewReader([]byte("invalid")))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
 			})
 
 			Convey("Domain error", func() {
@@ -153,10 +149,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-find", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 
@@ -168,12 +164,12 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-delete", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
 
-				respBody, _ := io.ReadAll(resp.Body)
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				respBody, _ := io.ReadAll(w.Body)
 				var result model.Response
 				json.Unmarshal(respBody, &result)
 				So(result.Success, ShouldBeTrue)
@@ -183,10 +179,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-delete", bytes.NewReader([]byte("invalid")))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
 			})
 
 			Convey("Domain error", func() {
@@ -196,10 +192,10 @@ func TestClientAdapter(t *testing.T) {
 				req := httptest.NewRequest(http.MethodPost, "/client-delete", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 
-				resp, err := app.Test(req)
-				So(err, ShouldBeNil)
-				defer resp.Body.Close()
-				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})

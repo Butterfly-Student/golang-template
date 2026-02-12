@@ -3,11 +3,11 @@ package command_inbound_adapter
 import (
 	"context"
 
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
-	inbound_port "prabogo/internal/port/inbound"
-	"prabogo/utils/activity"
-	"prabogo/utils/log"
+	"go-template/internal/domain"
+	"go-template/internal/model"
+	inbound_port "go-template/internal/port/inbound"
+	"go-template/utils/activity"
+	"go-template/utils/log"
 )
 
 type clientAdapter struct {
@@ -29,7 +29,7 @@ func (h *clientAdapter) PublishUpsert(name string) {
 
 	err := h.domain.Client().PublishUpsert(ctx, payload)
 	if err != nil {
-		log.WithContext(ctx).Errorf("client publish upsert error %s: %s", err.Error(), name)
+		log.WithContext(ctx).Error("client publish upsert error", err)
 	}
 	log.WithContext(ctx).Info("client publish upsert success")
 }
@@ -41,7 +41,7 @@ func (h *clientAdapter) StartUpsert(name string) {
 
 	err := h.domain.Client().StartUpsert(ctx, payload)
 	if err != nil {
-		log.WithContext(ctx).Errorf("client start upsert error %s: %s", err.Error(), name)
+		log.WithContext(ctx).Error("client start upsert error", err)
 	}
-	log.WithContext(ctx).Infof("client start upsert success")
+	log.WithContext(ctx).Info("client start upsert success")
 }

@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"prabogo/utils"
+	"go-template/utils"
 )
 
 const (
@@ -12,13 +12,13 @@ const (
 )
 
 type Client struct {
-	ID int `json:"id" db:"id"`
+	ID int `json:"id" db:"id" gorm:"primaryKey"`
 	ClientInput
 }
 
 type ClientInput struct {
 	Name      string    `json:"name" db:"name"`
-	BearerKey string    `json:"bearer_key,omitempty" db:"bearer_key"`
+	BearerKey string    `json:"bearer_key,omitempty" db:"bearer_key" gorm:"unique"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

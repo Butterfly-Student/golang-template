@@ -5,7 +5,7 @@ CONTAINER_NAME=$(shell basename $(CURDIR))_app
 # This prevents make from getting confused if files with these names exist in the directory
 # and ensures these targets always run when called, regardless of file timestamps
 # All listed targets are command targets that perform actions rather than creating output files
-.PHONY: build http message command workflow model domain migration-postgres inbound-http-fiber inbound-message-rabbitmq inbound-command inbound-workflow-temporal outbound-database-postgres outbound-http-fiber outbound-message-rabbitmq outbound-cache-redis outbound-workflow-temporal run generate-mocks lint test test-coverage test-integration
+.PHONY: build http message command workflow model domain migration-postgres inbound-http-gin inbound-message-rabbitmq inbound-command inbound-workflow-temporal outbound-database-postgres outbound-http outbound-message-rabbitmq outbound-cache-redis outbound-workflow-temporal run generate-mocks lint test test-coverage test-integration
 
 build:
 	@if [ "$(BUILD)" = "true" ]; then \
@@ -148,10 +148,10 @@ domain:
 	printf "}\n" >> $$DOMAIN_FILE; \
 	echo "[INFO] Created domain file: $$DOMAIN_FILE"; \
 	REGISTRY_FILE=internal/domain/registry.go; \
-	if grep -q "\"prabogo/internal/domain/$$LOWER\"" "$$REGISTRY_FILE"; then \
+	if grep -q "\"go-template/internal/domain/$$LOWER\"" "$$REGISTRY_FILE"; then \
 		echo "[INFO] Import for $$LOWER already exists in $$REGISTRY_FILE"; \
 	else \
-		awk '/^import \($$/{print;print "\t\"prabogo/internal/domain/'"$$LOWER"'\"";next}1' "$$REGISTRY_FILE" > "$$REGISTRY_FILE.tmp" && mv "$$REGISTRY_FILE.tmp" "$$REGISTRY_FILE"; \
+		awk '/^import \($$/{print;print "\t\"go-template/internal/domain/'"$$LOWER"'\"";next}1' "$$REGISTRY_FILE" > "$$REGISTRY_FILE.tmp" && mv "$$REGISTRY_FILE.tmp" "$$REGISTRY_FILE"; \
 		echo "[INFO] Added import for $$LOWER to $$REGISTRY_FILE"; \
 	fi; \
 	if grep -q "$${PASCAL}() $${LOWER}.$${PASCAL}Domain" "$$REGISTRY_FILE"; then \
@@ -228,9 +228,9 @@ migration-postgres:
 	printf "}\n" >> $$DST; \
 	echo "[INFO] Created migration file: $$DST"
 
-inbound-http-fiber:
+inbound-http-gin:
 	@if [ -z "$(VAL)" ]; then \
-		echo "[ERROR] Please provide VAL, e.g. make inbound-http-fiber VAL=name"; \
+		echo "[ERROR] Please provide VAL, e.g. make inbound-http-gin VAL=name"; \
 		exit 1; \
 	fi
 	@LOWER=$$(echo $(VAL) | tr '[:upper:]' '[:lower:]'); \
@@ -257,37 +257,37 @@ inbound-http-fiber:
 		printf "type $${PASCAL}HttpPort interface {}\n" >> $$DST; \
 		echo "[INFO] Created port interface file: $$DST with HTTP interface"; \
 	fi; \
-	FIBER_ADAPTER_DST=internal/adapter/inbound/fiber/$${LOWER}.go; \
-	if [ -f "$$FIBER_ADAPTER_DST" ]; then \
-		echo "[INFO] Fiber adapter file $$FIBER_ADAPTER_DST already exists."; \
+	GIN_ADAPTER_DST=internal/adapter/inbound/gin/$${LOWER}.go; \
+	if [ -f "$$GIN_ADAPTER_DST" ]; then \
+		echo "[INFO] Gin adapter file $$GIN_ADAPTER_DST already exists."; \
 	else \
-		printf "package fiber_inbound_adapter\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\n" >> $$FIBER_ADAPTER_DST; \
-		printf "import (\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\t\"prabogo/internal/domain\"\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\tinbound_port \"prabogo/internal/port/inbound\"\n" >> $$FIBER_ADAPTER_DST; \
-		printf ")\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\n" >> $$FIBER_ADAPTER_DST; \
-		printf "type $${CAMEL}Adapter struct {\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\tdomain domain.Domain\n" >> $$FIBER_ADAPTER_DST; \
-		printf "}\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\n" >> $$FIBER_ADAPTER_DST; \
-		printf "func New$${PASCAL}Adapter(\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\tdomain domain.Domain,\n" >> $$FIBER_ADAPTER_DST; \
-		printf ") inbound_port.$${PASCAL}HttpPort {\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\treturn &$${CAMEL}Adapter{\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\t\tdomain: domain,\n" >> $$FIBER_ADAPTER_DST; \
-		printf "\t}\n" >> $$FIBER_ADAPTER_DST; \
-		printf "}\n" >> $$FIBER_ADAPTER_DST; \
-		echo "[INFO] Created fiber adapter file: $$FIBER_ADAPTER_DST"; \
+		printf "package gin_inbound_adapter\n" >> $$GIN_ADAPTER_DST; \
+		printf "\n" >> $$GIN_ADAPTER_DST; \
+		printf "import (\n" >> $$GIN_ADAPTER_DST; \
+		printf "\t\"go-template/internal/domain\"\n" >> $$GIN_ADAPTER_DST; \
+		printf "\tinbound_port \"go-template/internal/port/inbound\"\n" >> $$GIN_ADAPTER_DST; \
+		printf ")\n" >> $$GIN_ADAPTER_DST; \
+		printf "\n" >> $$GIN_ADAPTER_DST; \
+		printf "type $${CAMEL}Adapter struct {\n" >> $$GIN_ADAPTER_DST; \
+		printf "\tdomain domain.Domain\n" >> $$GIN_ADAPTER_DST; \
+		printf "}\n" >> $$GIN_ADAPTER_DST; \
+		printf "\n" >> $$GIN_ADAPTER_DST; \
+		printf "func New$${PASCAL}Adapter(\n" >> $$GIN_ADAPTER_DST; \
+		printf "\tdomain domain.Domain,\n" >> $$GIN_ADAPTER_DST; \
+		printf ") inbound_port.$${PASCAL}HttpPort {\n" >> $$GIN_ADAPTER_DST; \
+		printf "\treturn &$${CAMEL}Adapter{\n" >> $$GIN_ADAPTER_DST; \
+		printf "\t\tdomain: domain,\n" >> $$GIN_ADAPTER_DST; \
+		printf "\t}\n" >> $$GIN_ADAPTER_DST; \
+		printf "}\n" >> $$GIN_ADAPTER_DST; \
+		echo "[INFO] Created gin adapter file: $$GIN_ADAPTER_DST"; \
 	fi; \
-	REGISTRY_FILE=internal/adapter/inbound/fiber/registry.go; \
+	REGISTRY_FILE=internal/adapter/inbound/gin/registry.go; \
 	if ! grep -q "func (s \*adapter) $${PASCAL}()" "$$REGISTRY_FILE"; then \
 		METHOD_TEXT="\nfunc (s *adapter) $${PASCAL}() inbound_port.$${PASCAL}HttpPort {\n\treturn New$${PASCAL}Adapter(s.domain)\n}"; \
 		awk -v m="$$METHOD_TEXT" '1; END{print m}' "$$REGISTRY_FILE" > "$$REGISTRY_FILE.tmp" && mv "$$REGISTRY_FILE.tmp" "$$REGISTRY_FILE"; \
 		echo "[INFO] Appended $${PASCAL} method to the bottom of $$REGISTRY_FILE"; \
 	else \
-		echo "[INFO] $${PASCAL} method already exists in fiber adapter registry"; \
+		echo "[INFO] $${PASCAL} method already exists in gin adapter registry"; \
 	fi; \
 	REGISTRY_INTERFACE_FILE=internal/port/inbound/registry_http.go; \
 	if grep -q "type HttpPort interface" "$$REGISTRY_INTERFACE_FILE"; then \
@@ -337,8 +337,8 @@ inbound-message-rabbitmq:
 		printf "package rabbitmq_inbound_adapter\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "import (\n" >> $$RABBITMQ_ADAPTER_DST; \
-		printf "\t\"prabogo/internal/domain\"\n" >> $$RABBITMQ_ADAPTER_DST; \
-		printf "\tinbound_port \"prabogo/internal/port/inbound\"\n" >> $$RABBITMQ_ADAPTER_DST; \
+		printf "\t\"go-template/internal/domain\"\n" >> $$RABBITMQ_ADAPTER_DST; \
+		printf "\tinbound_port \"go-template/internal/port/inbound\"\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf ")\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "type $${CAMEL}Adapter struct {\n" >> $$RABBITMQ_ADAPTER_DST; \
@@ -411,8 +411,8 @@ inbound-command:
 		printf "package command_inbound_adapter\n" >> $$COMMAND_ADAPTER_DST; \
 		printf "\n" >> $$COMMAND_ADAPTER_DST; \
 		printf "import (\n" >> $$COMMAND_ADAPTER_DST; \
-		printf "\t\"prabogo/internal/domain\"\n" >> $$COMMAND_ADAPTER_DST; \
-		printf "\tinbound_port \"prabogo/internal/port/inbound\"\n" >> $$COMMAND_ADAPTER_DST; \
+		printf "\t\"go-template/internal/domain\"\n" >> $$COMMAND_ADAPTER_DST; \
+		printf "\tinbound_port \"go-template/internal/port/inbound\"\n" >> $$COMMAND_ADAPTER_DST; \
 		printf ")\n" >> $$COMMAND_ADAPTER_DST; \
 		printf "\n" >> $$COMMAND_ADAPTER_DST; \
 		printf "type $${CAMEL}Adapter struct {\n" >> $$COMMAND_ADAPTER_DST; \
@@ -500,8 +500,8 @@ inbound-workflow-temporal:
 		printf "package $${LOWER}_temporal_inbound_adapter\n" >> $$WORKER_DST; \
 		printf "\n" >> $$WORKER_DST; \
 		printf "import (\n" >> $$WORKER_DST; \
-		printf "\t\"prabogo/internal/domain\"\n" >> $$WORKER_DST; \
-		printf "\tinbound_port \"prabogo/internal/port/inbound\"\n" >> $$WORKER_DST; \
+		printf "\t\"go-template/internal/domain\"\n" >> $$WORKER_DST; \
+		printf "\tinbound_port \"go-template/internal/port/inbound\"\n" >> $$WORKER_DST; \
 		printf ")\n" >> $$WORKER_DST; \
 		printf "\n" >> $$WORKER_DST; \
 		printf "type $${CAMEL}Adapter struct {\n" >> $$WORKER_DST; \
@@ -524,7 +524,7 @@ inbound-workflow-temporal:
 		printf "package $${LOWER}_temporal_inbound_adapter\n" >> $$WORKFLOW_DST; \
 		printf "\n" >> $$WORKFLOW_DST; \
 		printf "import (\n" >> $$WORKFLOW_DST; \
-		printf "\t\"prabogo/internal/domain\"\n" >> $$WORKFLOW_DST; \
+		printf "\t\"go-template/internal/domain\"\n" >> $$WORKFLOW_DST; \
 		printf ")\n" >> $$WORKFLOW_DST; \
 		printf "\n" >> $$WORKFLOW_DST; \
 		printf "type $${PASCAL}Workflow interface{}\n" >> $$WORKFLOW_DST; \
@@ -544,7 +544,7 @@ inbound-workflow-temporal:
 	fi; \
 	TEMPORAL_REGISTRY_FILE=internal/adapter/inbound/temporal/registry.go; \
 	if ! grep -q "$${LOWER}_temporal_inbound_adapter" "$$TEMPORAL_REGISTRY_FILE"; then \
-		awk -v p="\t$${LOWER}_temporal_inbound_adapter \"prabogo/internal/adapter/inbound/temporal/$${LOWER}\"" '/import \(/{print; print p; next} 1' "$$TEMPORAL_REGISTRY_FILE" > "$$TEMPORAL_REGISTRY_FILE.tmp" && mv "$$TEMPORAL_REGISTRY_FILE.tmp" "$$TEMPORAL_REGISTRY_FILE"; \
+		awk -v p="\t$${LOWER}_temporal_inbound_adapter \"go-template/internal/adapter/inbound/temporal/$${LOWER}\"" '/import \(/{print; print p; next} 1' "$$TEMPORAL_REGISTRY_FILE" > "$$TEMPORAL_REGISTRY_FILE.tmp" && mv "$$TEMPORAL_REGISTRY_FILE.tmp" "$$TEMPORAL_REGISTRY_FILE"; \
 		echo "[INFO] Added import for $${LOWER} to temporal registry"; \
 	else \
 		echo "[INFO] Import for $${LOWER} already exists in temporal registry"; \
@@ -593,7 +593,7 @@ outbound-database-postgres:
 		printf "package postgres_outbound_adapter\n" >> $$POSTGRES_ADAPTER_DST; \
 		printf "\n" >> $$POSTGRES_ADAPTER_DST; \
 		printf "import (\n" >> $$POSTGRES_ADAPTER_DST; \
-		printf "\toutbound_port \"prabogo/internal/port/outbound\"\n" >> $$POSTGRES_ADAPTER_DST; \
+		printf "\toutbound_port \"go-template/internal/port/outbound\"\n" >> $$POSTGRES_ADAPTER_DST; \
 		printf ")\n" >> $$POSTGRES_ADAPTER_DST; \
 		printf "\n" >> $$POSTGRES_ADAPTER_DST; \
 		printf "const table$${PASCAL} = \"$${LOWER}s\"\n" >> $$POSTGRES_ADAPTER_DST; \
@@ -669,7 +669,7 @@ outbound-http:
 		printf "package http_outbound_adapter\n" >> $$HTTP_ADAPTER_DST; \
 		printf "\n" >> $$HTTP_ADAPTER_DST; \
 		printf "import (\n" >> $$HTTP_ADAPTER_DST; \
-		printf "\toutbound_port \"prabogo/internal/port/outbound\"\n" >> $$HTTP_ADAPTER_DST; \
+		printf "\toutbound_port \"go-template/internal/port/outbound\"\n" >> $$HTTP_ADAPTER_DST; \
 		printf ")\n" >> $$HTTP_ADAPTER_DST; \
 		printf "\n" >> $$HTTP_ADAPTER_DST; \
 		printf "type $${CAMEL}Adapter struct {}\n" >> $$HTTP_ADAPTER_DST; \
@@ -738,7 +738,7 @@ outbound-message-rabbitmq:
 		printf "package rabbitmq_outbound_adapter\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "import (\n" >> $$RABBITMQ_ADAPTER_DST; \
-		printf "\toutbound_port \"prabogo/internal/port/outbound\"\n" >> $$RABBITMQ_ADAPTER_DST; \
+		printf "\toutbound_port \"go-template/internal/port/outbound\"\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf ")\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "\n" >> $$RABBITMQ_ADAPTER_DST; \
 		printf "type $${CAMEL}Adapter struct {}\n" >> $$RABBITMQ_ADAPTER_DST; \
@@ -807,7 +807,7 @@ outbound-cache-redis:
 		printf "package redis_outbound_adapter\n" >> $$REDIS_ADAPTER_DST; \
 		printf "\n" >> $$REDIS_ADAPTER_DST; \
 		printf "import (\n" >> $$REDIS_ADAPTER_DST; \
-		printf "\toutbound_port \"prabogo/internal/port/outbound\"\n" >> $$REDIS_ADAPTER_DST; \
+		printf "\toutbound_port \"go-template/internal/port/outbound\"\n" >> $$REDIS_ADAPTER_DST; \
 		printf ")\n" >> $$REDIS_ADAPTER_DST; \
 		printf "\n" >> $$REDIS_ADAPTER_DST; \
 		printf "type $${CAMEL}Adapter struct {}\n" >> $$REDIS_ADAPTER_DST; \
@@ -877,7 +877,7 @@ outbound-workflow-temporal:
 		printf "package temporal_outbound_adapter\n" >> $$TEMPORAL_ADAPTER_DST; \
 		printf "\n" >> $$TEMPORAL_ADAPTER_DST; \
 		printf "import (\n" >> $$TEMPORAL_ADAPTER_DST; \
-		printf "\toutbound_port \"prabogo/internal/port/outbound\"\n" >> $$TEMPORAL_ADAPTER_DST; \
+		printf "\toutbound_port \"go-template/internal/port/outbound\"\n" >> $$TEMPORAL_ADAPTER_DST; \
 		printf ")\n" >> $$TEMPORAL_ADAPTER_DST; \
 		printf "\n" >> $$TEMPORAL_ADAPTER_DST; \
 		printf "type $${CAMEL}WorkflowAdapter struct {}\n" >> $$TEMPORAL_ADAPTER_DST; \

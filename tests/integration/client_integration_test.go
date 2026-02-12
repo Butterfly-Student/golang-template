@@ -5,18 +5,16 @@ package integration_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"gorm.io/gorm"
 
-	postgres_outbound_adapter "prabogo/internal/adapter/outbound/postgres"
-	"prabogo/internal/model"
+	postgres_outbound_adapter "go-template/internal/adapter/outbound/postgres"
+	"go-template/internal/model"
+	"go-template/tests/helpers"
 )
 
 func TestClientIntegration(t *testing.T) {
@@ -26,47 +24,24 @@ func TestClientIntegration(t *testing.T) {
 
 	ctx := context.Background()
 
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:14-alpine",
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("testuser"),
-		postgres.WithPassword("testpass"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second)),
-	)
+	// Use shared helper for container setup
+	pgContainer, err := helpers.SetupPostgresContainer(ctx)
 	if err != nil {
-		t.Fatalf("Failed to start postgres container: %v", err)
+		t.Fatalf("Failed to setup postgres container: %v", err)
 	}
 	defer pgContainer.Terminate(ctx)
 
-	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	// Use GORM AutoMigrate instead of manual SQL
+	err = pgContainer.DB.AutoMigrate(&model.Client{})
 	if err != nil {
-		t.Fatalf("Failed to get connection string: %v", err)
-	}
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		t.Fatalf("Failed to connect to database: %v", err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS clients (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			bearer_key VARCHAR(255) UNIQUE NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create table: %v", err)
+		t.Fatalf("Failed to migrate table: %v", err)
 	}
 
 	Convey("Test Client Integration with PostgreSQL", t, func() {
-		adapter := postgres_outbound_adapter.NewClientAdapter(db)
+		adapter := postgres_outbound_adapter.NewClientAdapter(pgContainer.DB)
+
+		// Cleanup before test
+		pgContainer.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&model.Client{})
 
 		Convey("Full CRUD cycle", func() {
 			bearerKey := "integration-key-" + time.Now().Format("20060102150405.000")
@@ -132,6 +107,9 @@ func TestClientIntegration(t *testing.T) {
 		})
 
 		Convey("FindByFilter with multiple filters", func() {
+			// Cleanup
+			pgContainer.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&model.Client{})
+
 			now := time.Now()
 			clients := []model.ClientInput{
 				{Name: "Client A", BearerKey: "key-a-" + now.Format("150405.000"), CreatedAt: now, UpdatedAt: now},

@@ -1,16 +1,16 @@
-# Prabogo Project Instructions for AI Assistants
+# GoTemplate Project Instructions for AI Assistants
 
-This file contains instructions for AI coding assistants working with the Prabogo project.
+This file contains instructions for AI coding assistants working with the GoTemplate project.
 
 ## Project Information
 
-- **Project Name**: Prabogo
+- **Project Name**: GoTemplate
 - **Author**: Moch Dieqy Dzulqaidar
 - **License**: MIT License
 - **Go Version**: >= go1.24.0
 
 ## Project Structure
-Prabogo uses a hexagonal architecture (ports and adapters) with the following structure:
+GoTemplate uses a hexagonal architecture (ports and adapters) with the following structure:
 - `cmd/`: Application entry point
   - `main.go`: Main application entrypoint
 - `internal/`: Internal implementations

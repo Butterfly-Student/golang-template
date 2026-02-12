@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
-	"prabogo/internal/domain"
-	"prabogo/internal/model"
-	inbound_port "prabogo/internal/port/inbound"
-	"prabogo/utils/activity"
-	"prabogo/utils/log"
+	"go-template/internal/domain"
+	"go-template/internal/model"
+	inbound_port "go-template/internal/port/inbound"
+	"go-template/utils/activity"
+	"go-template/utils/log"
 )
 
 type clientAdapter struct {
@@ -29,14 +29,14 @@ func (h *clientAdapter) Upsert(a any) bool {
 	var payload []model.ClientInput
 	err := json.Unmarshal(msg, &payload)
 	if err != nil {
-		log.WithContext(ctx).Errorf("client upsert error %s: %s", err.Error(), string(msg))
+		log.WithContext(ctx).Error("client upsert error", err)
 		return true
 	}
 	ctx = context.WithValue(ctx, activity.Payload, payload)
 
 	results, err := h.domain.Client().Upsert(ctx, payload)
 	if err != nil {
-		log.WithContext(ctx).Errorf("client upsert error %s: %s", err.Error(), string(msg))
+		log.WithContext(ctx).Error("client upsert error", err)
 	}
 	ctx = context.WithValue(ctx, activity.Result, results)
 

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	"prabogo/utils/log"
+	"go-template/utils/log"
 )
 
 type ExchangeKind string
@@ -156,18 +156,18 @@ func SubscriberWithConfig(cfg SubscriberConfig) error {
 			if ack {
 				err = d.Ack(false)
 				if err != nil {
-					log.WithContext(context.Background()).Errorf("failed to ack message with body %s: %s", string(d.Body), err)
+					log.WithContext(context.Background()).Error("failed to ack message", err)
 				}
 
 			} else {
 				err = d.Nack(false, true)
 				if err != nil {
-					log.WithContext(context.Background()).Errorf("failed to nack message with body %s: %s", string(d.Body), err)
+					log.WithContext(context.Background()).Error("failed to nack message", err)
 				}
 			}
 		}
 	}()
-	log.WithContext(ctx).Infof("subscriber listen exchange: '%s', queue: '%s', topic: '%s', consumerKey: '%s'", cfg.Exchange, cfg.Queue, cfg.RouteKey, consumerKey)
+	log.WithContext(ctx).Info("subscriber listening")
 	<-forever
 	return nil
 }

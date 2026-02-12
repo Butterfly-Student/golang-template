@@ -66,10 +66,10 @@ jobs:
           cache: true
 
       - name: Build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o prabogo ./cmd
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o go-template ./cmd
 
       - name: Build Docker image
-        run: docker build -t prabogo:${{ github.sha }} .
+        run: docker build -t go-template:${{ github.sha }} .
 
   integration-test:
     name: Integration Tests

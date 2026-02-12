@@ -1,10 +1,10 @@
 # Authorization
 
-Prabogo supports multiple authorization strategies to secure your applications. You can choose between internal bearer key authentication or integrate with external identity providers like Authentik for enhanced security.
+GoTemplate supports multiple authorization strategies to secure your applications. You can choose between internal bearer key authentication or integrate with external identity providers like Authentik for enhanced security.
 
 ## Configuration Overview
 
-Authorization is configured through the `AUTH_DRIVER` environment variable. Prabogo supports two main authorization methods:
+Authorization is configured through the `AUTH_DRIVER` environment variable. GoTemplate supports two main authorization methods:
 
 ## 1. Internal Bearer Key Authentication
 
@@ -17,11 +17,11 @@ This method uses internal client bearer keys stored in your database. While simp
 AUTH_DRIVER=
 
 # Other required configurations
-DATABASE_USERNAME=prabogo
-DATABASE_PASSWORD=prabogo
+DATABASE_USERNAME=go-template
+DATABASE_PASSWORD=go-template
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_NAME=prabogo
+DATABASE_NAME=go-template
 ```
 
 ### Security Recommendations
@@ -37,7 +37,7 @@ Benefits of using mTLS with internal authentication:
 
 ## 2. Authentik JWT Authentication (Recommended)
 
-For enhanced security, Prabogo integrates with Authentik using JWT (JSON Web Token) client credentials flow. This method provides enterprise-grade authentication and authorization capabilities.
+For enhanced security, GoTemplate integrates with Authentik using JWT (JSON Web Token) client credentials flow. This method provides enterprise-grade authentication and authorization capabilities.
 
 ### Configuration
 
@@ -49,7 +49,7 @@ AUTH_DRIVER=authentik
 AUTH_JWKS_URL=https://your-authentik-server.com/application/o/your-app/jwks/
 
 # Example configuration
-# AUTH_JWKS_URL=https://authentik-server.prabogo.orb.local/application/o/prabogo/jwks/
+# AUTH_JWKS_URL=https://authentik-server.go-template.orb.local/application/o/go-template/jwks/
 ```
 
 ### Authentik Setup Requirements
@@ -113,7 +113,7 @@ To use Authentik JWT authentication, you need to:
 
 4. **Configure JWKS Endpoint**
    - Obtain the JWKS URL from your Authentik application
-   - Ensure the endpoint is accessible from your Prabogo application
+   - Ensure the endpoint is accessible from your GoTemplate application
 
 5. **Set Environment Variables**
    - Update `AUTH_DRIVER=authentik`
