@@ -18,6 +18,7 @@ import (
 	rabbitmq_outbound_adapter "go-template/internal/adapter/outbound/rabbitmq"
 	redis_outbound_adapter "go-template/internal/adapter/outbound/redis"
 	temporal_outbound_adapter "go-template/internal/adapter/outbound/temporal"
+	"github.com/casbin/casbin/v2"
 	"go-template/internal/domain"
 	_ "go-template/internal/migration/postgres"
 	outbound_port "go-template/internal/port/outbound"
@@ -58,11 +59,13 @@ func NewApp() *App {
 	inboundHttpDriver = os.Getenv("INBOUND_HTTP_DRIVER")
 	inboundMessageDriver = os.Getenv("INBOUND_MESSAGE_DRIVER")
 	inboundWorkflowDriver = os.Getenv("INBOUND_WORKFLOW_DRIVER")
+	dbPort, enforcer := databaseOutbound(ctx)
 	domain := domain.NewDomain(
-		databaseOutbound(ctx),
+		dbPort,
 		messageOutbound(ctx),
 		cacheOutbound(ctx),
 		workflowOutbound(ctx),
+		enforcer,
 	)
 
 	return &App{
@@ -84,7 +87,7 @@ func (a *App) Run(option string) {
 	}
 }
 
-func databaseOutbound(ctx context.Context) outbound_port.DatabasePort {
+func databaseOutbound(ctx context.Context) (outbound_port.DatabasePort, *casbin.Enforcer) {
 	if !utils.IsInList(databaseDriverList, outboundDatabaseDriver) {
 		log.WithContext(ctx).Error("database driver is not supported")
 		os.Exit(1)
@@ -93,9 +96,9 @@ func databaseOutbound(ctx context.Context) outbound_port.DatabasePort {
 
 	switch outboundDatabaseDriver {
 	case "postgres":
-		return postgres_outbound_adapter.NewAdapter(db)
+		return postgres_outbound_adapter.NewAdapter(db), postgres_outbound_adapter.InitCasbin(db)
 	}
-	return nil
+	return nil, nil
 }
 
 func messageOutbound(ctx context.Context) outbound_port.MessagePort {
