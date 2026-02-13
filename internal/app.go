@@ -30,7 +30,7 @@ import (
 )
 
 var databaseDriverList = []string{"postgres"}
-var httpDriverList = []string{"fiber"}
+var httpDriverList = []string{"gin"}
 var messageDriverList = []string{"rabbitmq"}
 var workflowDriverList = []string{"temporal"}
 var outboundDatabaseDriver string
